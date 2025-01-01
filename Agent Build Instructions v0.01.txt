@@ -1,0 +1,714 @@
+Absolutely, I understand that diving into coding can be overwhelming, especially if you're aiming to focus more on conceptualizing and using the AI agent as a tool. I'll provide you with complete scripts and detailed instructions on how to set up your project. This way, you can focus on utilizing the agent without getting bogged down by the intricacies of coding.
+
+---
+
+## **Comprehensive Guide to Building Your RAG-Capable AI Agent**
+
+### **1. Project Structure Overview**
+
+Before diving into the scripts, it's essential to understand the overall structure of your project. Here's a suggested layout:
+
+```
+rag_ai_agent/
+├── app.py
+├── agent.py
+├── tools.py
+├── requirements.txt
+├── vector_store.index
+├── documents.pkl
+├── templates/
+│   └── index.html
+└── scripts/
+    └── your_script.py
+```
+
+### **2. Setting Up the Project**
+
+#### **a. Create the Project Directory**
+
+1. **Navigate to Your Desired Location:**
+   
+   Decide where you want to place your project. For example, `C:\Users\YourUsername\Documents\`.
+
+2. **Create the Project Folder:**
+   
+   - **Windows:**
+     - Open **File Explorer**.
+     - Navigate to your chosen location.
+     - Right-click and select **New > Folder**.
+     - Name it `rag_ai_agent`.
+
+#### **b. Create Necessary Subdirectories**
+
+Inside `rag_ai_agent`, create the following folders:
+
+- **templates:** This will store your HTML files.
+- **scripts:** This is where your executable scripts will reside.
+
+Your directory should now look like this:
+
+```
+rag_ai_agent/
+├── templates/
+└── scripts/
+```
+
+### **3. Preparing Your Environment**
+
+#### **a. Activate Your Virtual Environment**
+
+If you followed the previous instructions to set up a virtual environment named `rag_agent_env`, ensure it's activated:
+
+1. **Open Command Prompt:**
+   
+   - Press `Win + R`, type `cmd`, and press `Enter`.
+
+2. **Navigate to Your Project Directory:**
+   
+   ```bash
+   cd C:\Users\YourUsername\Documents\rag_ai_agent
+   ```
+
+3. **Activate the Virtual Environment:**
+   
+   ```bash
+   rag_agent_env\Scripts\activate
+   ```
+
+   *You should see `(rag_agent_env)` preceding your command prompt, indicating it's active.*
+
+#### **b. Install Dependencies**
+
+Create a `requirements.txt` file to manage your project's dependencies.
+
+1. **Create `requirements.txt`:**
+   
+   - Open **Visual Studio Community Edition**.
+   - Open a new file and paste the following content:
+
+     ```plaintext
+     openai
+     langchain
+     faiss-cpu
+     sentence-transformers
+     flask
+     ```
+   
+   - Save this file as `requirements.txt` inside `rag_ai_agent`.
+
+2. **Install Dependencies via Pip:**
+   
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   *This command will install all the necessary libraries specified in `requirements.txt`.*
+
+---
+
+### **4. Adding the Scripts**
+
+Now, we'll create the essential Python scripts and HTML templates required for your AI agent.
+
+#### **a. `agent.py` – Core AI Agent Functionality**
+
+This script handles data loading, embedding, vector store creation, and querying.
+
+1. **Create `agent.py`:**
+   
+   - Open **Visual Studio Community Edition**.
+   - Create a new Python file and paste the following code:
+
+     ```python
+     # agent.py
+
+     import os
+     import pickle
+     from sentence_transformers import SentenceTransformer
+     import faiss
+     from langchain import OpenAI
+     from langchain.vectorstores import FAISS
+     from langchain.embeddings import SentenceTransformerEmbeddings
+     from langchain.chains import RetrievalQA
+
+     # Configuration
+     DOCUMENTS_FOLDER = 'documents'  # Folder to store your text documents
+     VECTOR_STORE_PATH = 'vector_store.index'
+     DOCUMENTS_PICKLE = 'documents.pkl'
+     OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY'  # Replace with your OpenAI API key
+
+     # Initialize Embedding Model
+     embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+     def load_documents(folder_path):
+         documents = []
+         for filename in os.listdir(folder_path):
+             if filename.endswith(".txt"):
+                 with open(os.path.join(folder_path, filename), 'r', encoding='utf-8') as file:
+                     documents.append(file.read())
+         return documents
+
+     def create_vector_store(docs, embeddings, index_path, pickle_path):
+         dimension = embeddings.shape[1]
+         index = faiss.IndexFlatL2(dimension)
+         index.add(embeddings)
+         faiss.write_index(index, index_path)
+         with open(pickle_path, 'wb') as f:
+             pickle.dump(docs, f)
+
+     def initialize_agent():
+         # Check if vector store exists
+         if not os.path.exists(VECTOR_STORE_PATH) or not os.path.exists(DOCUMENTS_PICKLE):
+             print("Creating vector store...")
+             docs = load_documents(DOCUMENTS_FOLDER)
+             embeddings = embedding_model.encode(docs, show_progress_bar=True)
+             create_vector_store(docs, embeddings, VECTOR_STORE_PATH, DOCUMENTS_PICKLE)
+             print("Vector store created.")
+         else:
+             print("Vector store already exists.")
+
+         # Load documents and index
+         with open(DOCUMENTS_PICKLE, 'rb') as f:
+             docs = pickle.load(f)
+
+         index = faiss.read_index(VECTOR_STORE_PATH)
+
+         # Initialize FAISS with embeddings
+         embeddings = SentenceTransformerEmbeddings(model_name='all-MiniLM-L6-v2')
+         vector_store = FAISS(embeddings.embed_query, index, docs, VECTOR_STORE_PATH)
+
+         # Initialize OpenAI model
+         llm = OpenAI(api_key=OPENAI_API_KEY)
+
+         # Create Retrieval QA Chain
+         qa = RetrievalQA.from_chain_type(
+             llm=llm,
+             chain_type="stuff",
+             retriever=vector_store.as_retriever(),
+             return_source_documents=True
+         )
+
+         return qa
+
+     if __name__ == '__main__':
+         qa = initialize_agent()
+         while True:
+             query = input("You: ")
+             if query.lower() in ['exit', 'quit']:
+                 break
+             response = qa(query)
+             print("AI Agent:", response['result'])
+     ```
+
+2. **Replace the OpenAI API Key:**
+   
+   - **Important:** Replace `'YOUR_OPENAI_API_KEY'` with your actual OpenAI API key.
+   - If you don't have one, you can [sign up here](https://platform.openai.com/signup) and obtain your API key from the [OpenAI dashboard](https://platform.openai.com/account/api-keys).
+
+3. **Create the `documents` Folder:**
+   
+   - Inside `rag_ai_agent`, create a new folder named `documents`.
+   - **Add Your Documents:**
+     - Place all your `.txt` files containing the information you want the AI agent to retrieve. For example, you can have `notes.txt`, `documentation.txt`, etc.
+     - If you have documents in other formats (e.g., Word), convert them to plain text (`.txt`) using LibreOffice or any other tool.
+
+#### **b. `tools.py` – Defining Tools for the Agent**
+
+This script allows your AI agent to execute specific functions, such as running scripts.
+
+1. **Create `tools.py`:**
+   
+   - Open a new Python file and paste the following code:
+
+     ```python
+     # tools.py
+
+     import subprocess
+
+     def run_script(script_path):
+         try:
+             result = subprocess.run(['python', script_path], capture_output=True, text=True)
+             return result.stdout
+         except Exception as e:
+             return f"Error: {str(e)}"
+     ```
+
+   - Save this file as `tools.py` inside `rag_ai_agent`.
+
+#### **c. `app.py` – Flask Web Interface**
+
+This script sets up a simple web interface using Flask to interact with your AI agent.
+
+1. **Create `app.py`:**
+   
+   - Open a new Python file and paste the following code:
+
+     ```python
+     # app.py
+
+     from flask import Flask, request, render_template
+     from agent import initialize_agent
+     import os
+     from tools import run_script
+     from langchain.agents import initialize_agent as langchain_initialize_agent
+     from langchain.agents import AgentType, Tool
+
+     app = Flask(__name__)
+     qa = initialize_agent()
+
+     # Define Tools
+     tools = [
+         Tool(
+             name='RunScript',
+             func=run_script,
+             description='Run a specified Python script and return the output.'
+         )
+     ]
+
+     # Initialize LangChain Agent with Tools
+     try:
+         agent = langchain_initialize_agent(
+             tools,
+             qa.llm,
+             agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+             verbose=True
+         )
+     except Exception as e:
+         agent = None
+         print(f"Error initializing agent with tools: {e}")
+
+     @app.route('/', methods=['GET', 'POST'])
+     def home():
+         response = None
+         query = None
+         if request.method == 'POST':
+             query = request.form['query']
+             if 'RunScript' in query and agent:
+                 # Extract script path from the query
+                 script_path = query.split('RunScript')[-1].strip()
+                 if os.path.exists(os.path.join('scripts', script_path)):
+                     response = run_script(os.path.join('scripts', script_path))
+                 else:
+                     response = "Script not found."
+             else:
+                 response = qa(query)['result']
+         return render_template('index.html', query=query, response=response)
+
+     if __name__ == '__main__':
+         app.run(debug=True)
+     ```
+
+2. **Explanation:**
+   
+   - **Flask App:** Sets up a web server where you can input queries.
+   - **Tool Integration:** Currently includes a tool to run Python scripts located in the `scripts` directory.
+   - **Error Handling:** If there's an issue initializing the agent with tools, it will notify you.
+
+#### **d. `templates/index.html` – HTML Template for the Web Interface**
+
+This file defines the frontend interface where you can interact with your AI agent.
+
+1. **Create `index.html`:**
+   
+   - Inside the `templates` folder, create a new file named `index.html`.
+   - Open it and paste the following HTML code:
+
+     ```html
+     <!-- templates/index.html -->
+
+     <!DOCTYPE html>
+     <html>
+     <head>
+         <title>RAG AI Agent</title>
+         <style>
+             body {
+                 font-family: Arial, sans-serif;
+                 background-color: #f4f4f4;
+                 margin: 0;
+                 padding: 0;
+             }
+             .container {
+                 width: 50%;
+                 margin: auto;
+                 overflow: hidden;
+                 padding: 50px;
+                 background: white;
+                 margin-top: 50px;
+                 box-shadow: 0 0 10px rgba(0,0,0,0.1);
+             }
+             input[type="text"] {
+                 width: 80%;
+                 padding: 10px;
+                 margin-right: 10px;
+                 border: 1px solid #ccc;
+                 border-radius: 4px;
+             }
+             input[type="submit"] {
+                 padding: 10px 20px;
+                 background-color: #28a745;
+                 color: white;
+                 border: none;
+                 border-radius: 4px;
+                 cursor: pointer;
+             }
+             input[type="submit"]:hover {
+                 background-color: #218838;
+             }
+             .response {
+                 margin-top: 20px;
+                 padding: 10px;
+                 background-color: #e9ecef;
+                 border-radius: 4px;
+             }
+         </style>
+     </head>
+     <body>
+         <div class="container">
+             <h1>Ask the AI Agent</h1>
+             <form method="post">
+                 <input type="text" name="query" placeholder="Enter your query here" required>
+                 <input type="submit" value="Submit">
+             </form>
+             {% if response %}
+                 <div class="response">
+                     <h2>Response:</h2>
+                     <p>{{ response }}</p>
+                 </div>
+             {% endif %}
+         </div>
+     </body>
+     </html>
+     ```
+
+2. **Customization:**
+   
+   - **Styling:** The CSS styles ensure the interface is clean and user-friendly.
+   - **Functionality:** Users can input queries, and responses from the AI agent are displayed below the form.
+
+#### **e. Placeholder for Executable Scripts**
+
+1. **Create a Sample Script:**
+   
+   - Inside the `scripts` folder, create a new Python file named `hello.py`.
+   - Open it and paste the following code:
+
+     ```python
+     # scripts/hello.py
+
+     print("Hello from the script!")
+     ```
+
+   - This script serves as an example and can be modified or replaced with your desired scripts.
+
+### **5. Preparing Your Data**
+
+#### **a. Adding Documents for Retrieval**
+
+1. **Navigate to the `documents` Folder:**
+   
+   - Inside `rag_ai_agent`, open the `documents` folder.
+
+2. **Add `.txt` Files:**
+   
+   - Create plain text files containing the information you want your AI agent to retrieve.
+   - **Example:**
+     - **File:** `notes.txt`
+     - **Content:**
+       ```plaintext
+       Python is a high-level, interpreted programming language known for its readability and versatility. It supports multiple programming paradigms, including procedural, object-oriented, and functional programming.
+       ```
+     - **File:** `documentation.txt`
+     - **Content:**
+       ```plaintext
+       Flask is a lightweight WSGI web application framework in Python. It is designed to make getting started quick and easy, with the ability to scale up to complex applications.
+       ```
+
+   - **Note:** Ensure all documents are in `.txt` format for seamless processing.
+
+### **6. Running the AI Agent**
+
+#### **a. Initialize the Vector Store**
+
+1. **Run `agent.py`:**
+   
+   - Open **Command Prompt**.
+   - Navigate to your project directory:
+
+     ```bash
+     cd C:\Users\YourUsername\Documents\rag_ai_agent
+     ```
+
+   - Activate your virtual environment:
+
+     ```bash
+     rag_agent_env\Scripts\activate
+     ```
+
+   - Execute `agent.py`:
+
+     ```bash
+     python agent.py
+     ```
+
+   - **What Happens:**
+     - The script checks if `vector_store.index` and `documents.pkl` exist.
+     - If not, it processes the `.txt` files in the `documents` folder, creates embeddings, and stores them.
+     - Once done, it enters an interactive mode where you can input queries directly in the command prompt.
+
+2. **Interact via Command Prompt:**
+   
+   - **Example Queries:**
+     - `What is Python?`
+     - `Tell me about Flask.`
+
+   - **Exit the Interactive Mode:**
+     - Type `exit` or `quit`.
+
+#### **b. Launch the Flask Web Interface**
+
+1. **Run `app.py`:**
+   
+   - In **Command Prompt**, ensure you're still in the project directory and the virtual environment is active.
+   - Execute:
+
+     ```bash
+     python app.py
+     ```
+
+   - **What Happens:**
+     - Flask starts a local web server, typically accessible at `http://127.0.0.1:5000/`.
+
+2. **Access the Web Interface:**
+   
+   - Open your web browser.
+   - Navigate to [http://127.0.0.1:5000/](http://127.0.0.1:5000/).
+   - **Usage:**
+     - Enter your query in the input box and press **Submit**.
+     - The AI agent's response will appear below the form.
+
+3. **Using Tools (Running Scripts):**
+   
+   - **Example Query:**
+     - `RunScript hello.py`
+   
+   - **Expected Response:**
+     - `Hello from the script!`
+
+   - **Note:** Ensure the script you're trying to run exists in the `scripts` folder.
+
+### **7. Final Project Structure with Files**
+
+Your `rag_ai_agent` directory should now contain the following files and folders with their respective contents:
+
+```
+rag_ai_agent/
+├── app.py
+├── agent.py
+├── tools.py
+├── requirements.txt
+├── vector_store.index      # Generated after running agent.py
+├── documents.pkl           # Generated after running agent.py
+├── documents/
+│   ├── notes.txt
+│   └── documentation.txt
+├── templates/
+│   └── index.html
+└── scripts/
+    └── hello.py
+```
+
+- **`vector_store.index` & `documents.pkl`:** These files are automatically generated by `agent.py` and store your vector embeddings and documents, respectively.
+  
+- **`documents/`:** Contains all your `.txt` files for the AI agent's knowledge base.
+  
+- **`templates/`:** Holds your HTML templates for the Flask web interface.
+  
+- **`scripts/`:** Place any Python scripts here that you want the AI agent to execute.
+
+---
+
+## **8. Additional Tips and Best Practices**
+
+### **a. Managing Your OpenAI API Key Securely**
+
+- **Avoid Hardcoding API Keys:**
+  
+  Storing API keys directly in your scripts can be risky. Instead, use environment variables.
+
+- **Setting Environment Variables on Windows:**
+  
+  1. **Open Command Prompt**.
+  2. **Set the Environment Variable:**
+     
+     ```bash
+     set OPENAI_API_KEY=your_actual_api_key_here
+     ```
+  
+  3. **Modify `agent.py` to Use Environment Variables:**
+     
+     ```python
+     import os
+     # Replace the OPENAI_API_KEY line with:
+     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+     ```
+
+  - **Note:** This method ensures your API key isn't exposed in your codebase.
+
+### **b. Expanding the Knowledge Base**
+
+- **Add More Documents:**
+  
+  To enhance the AI agent's capabilities, continuously add relevant `.txt` files to the `documents` folder.
+
+- **Reinitialize the Vector Store:**
+  
+  After adding new documents, delete `vector_store.index` and `documents.pkl`, then rerun `agent.py` to recreate the vector store with the updated data.
+
+### **c. Enhancing Tool Functionality**
+
+- **Adding More Tools:**
+  
+  You can define additional functions in `tools.py` and integrate them similarly to `RunScript`.
+
+- **Example – File Reader:**
+  
+  ```python
+  # tools.py
+
+  def read_file(file_path):
+      try:
+          with open(file_path, 'r', encoding='utf-8') as file:
+              return file.read()
+      except Exception as e:
+          return f"Error: {str(e)}"
+  ```
+
+  - **Integrate into `app.py`:**
+    
+    ```python
+    tools = [
+        Tool(
+            name='RunScript',
+            func=run_script,
+            description='Run a specified Python script and return the output.'
+        ),
+        Tool(
+            name='ReadFile',
+            func=read_file,
+            description='Read a specified text file and return its contents.'
+        )
+    ]
+    ```
+
+### **d. Utilizing Git for Version Control**
+
+- **Initialize Git Repository:**
+  
+  Even as a beginner, using Git can help track changes and collaborate in the future.
+
+  ```bash
+  git init
+  ```
+
+- **Create `.gitignore`:**
+  
+  To avoid committing sensitive files like `vector_store.index`, `documents.pkl`, and API keys.
+
+  ```plaintext
+  # .gitignore
+
+  vector_store.index
+  documents.pkl
+  rag_agent_env/
+  __pycache__/
+  *.pyc
+  ```
+
+### **e. Optimizing for Performance on Limited Hardware**
+
+- **Use Lightweight Models:**
+  
+  `all-MiniLM-L6-v2` is a good choice. Avoid larger models that may strain your 8GB RAM system.
+
+- **Limit Document Size:**
+  
+  Ensure individual documents aren't excessively large. Split them into smaller, manageable chunks if necessary.
+
+- **Batch Processing:**
+  
+  When encoding embeddings, process documents in smaller batches to reduce memory usage.
+
+---
+
+## **9. Troubleshooting Common Issues**
+
+### **a. Missing OpenAI API Key Error**
+
+- **Symptom:**
+  
+  The script cannot find the `OPENAI_API_KEY`.
+
+- **Solution:**
+  
+  - Ensure you've set the environment variable correctly.
+  - Verify that `OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')` is present in `agent.py`.
+  - Restart your command prompt after setting the environment variable.
+
+### **b. FAISS Installation Issues**
+
+- **Symptom:**
+  
+  Errors during `pip install faiss-cpu`.
+
+- **Solution:**
+  
+  - Ensure you're using Python 3.11 and have `pip` updated.
+  - If issues persist, consider using a different version of FAISS or consult the [FAISS installation guide](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md).
+
+### **c. Flask App Not Loading Properly**
+
+- **Symptom:**
+  
+  The web interface doesn't display or shows errors.
+
+- **Solution:**
+  
+  - Check the console for error messages.
+  - Ensure all dependencies in `requirements.txt` are installed.
+  - Verify that `index.html` is correctly placed inside the `templates` folder.
+
+---
+
+## **10. Conclusion**
+
+By following the above steps, you've set up a functional Retrieval-Augmented Generation (RAG) AI agent tailored to your specifications. This agent can retrieve information from your documents, generate responses, and execute predefined tools like running scripts. Here's a recap of what you've achieved:
+
+- **Data Retrieval:** Your AI agent can fetch relevant information from your `.txt` documents using FAISS and sentence embeddings.
+  
+- **Natural Language Generation:** Leveraging OpenAI's GPT models, the agent can generate coherent and contextually relevant responses.
+  
+- **Tool Integration:** The agent can execute specified tools, such as running Python scripts from the `scripts` directory.
+  
+- **User Interface:** A simple Flask-based web interface allows you to interact with the agent seamlessly.
+
+### **Next Steps:**
+
+1. **Explore More Tools:**
+   
+   - Integrate additional functionalities like file reading, data manipulation, or API interactions.
+
+2. **Enhance the UI:**
+   
+   - Improve the web interface with better styling or additional features.
+
+3. **Expand Knowledge Base:**
+   
+   - Continuously add and update documents to make the agent more knowledgeable and versatile.
+
+4. **Learn and Iterate:**
+   
+   - As you grow more comfortable, delve deeper into customizing and optimizing the agent to better suit your needs.
+
+---
+
+Feel free to reach out if you encounter any issues or have further questions. Happy building!
