@@ -13,7 +13,7 @@ from langchain.chains import RetrievalQA
 DOCUMENTS_FOLDER = 'documents'  # Folder to store your text documents
 VECTOR_STORE_PATH = 'vector_store.index'
 DOCUMENTS_PICKLE = 'documents.pkl'
-OPENAI_API_KEY = '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'  # Replace with your OpenAI API key
+OPENAI_API_KEY = 'YOURKey'  # Replace with your OpenAI API key
 
 # Initialize Embedding Model
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
