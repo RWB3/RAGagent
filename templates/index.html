@@ -1,0 +1,64 @@
+  <!-- templates/index.html -->
+
+     <!DOCTYPE html>
+     <html>
+     <head>
+         <title>RAG AI Agent</title>
+         <style>
+             body {
+                 font-family: Arial, sans-serif;
+                 background-color: #f4f4f4;
+                 margin: 0;
+                 padding: 0;
+             }
+             .container {
+                 width: 50%;
+                 margin: auto;
+                 overflow: hidden;
+                 padding: 50px;
+                 background: white;
+                 margin-top: 50px;
+                 box-shadow: 0 0 10px rgba(0,0,0,0.1);
+             }
+             input[type="text"] {
+                 width: 80%;
+                 padding: 10px;
+                 margin-right: 10px;
+                 border: 1px solid #ccc;
+                 border-radius: 4px;
+             }
+             input[type="submit"] {
+                 padding: 10px 20px;
+                 background-color: #28a745;
+                 color: white;
+                 border: none;
+                 border-radius: 4px;
+                 cursor: pointer;
+             }
+             input[type="submit"]:hover {
+                 background-color: #218838;
+             }
+             .response {
+                 margin-top: 20px;
+                 padding: 10px;
+                 background-color: #e9ecef;
+                 border-radius: 4px;
+             }
+         </style>
+     </head>
+     <body>
+         <div class="container">
+             <h1>Ask the AI Agent</h1>
+             <form method="post">
+                 <input type="text" name="query" placeholder="Enter your query here" required>
+                 <input type="submit" value="Submit">
+             </form>
+             {% if response %}
+                 <div class="response">
+                     <h2>Response:</h2>
+                     <p>{{ response }}</p>
+                 </div>
+             {% endif %}
+         </div>
+     </body>
+     </html>
