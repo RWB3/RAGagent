@@ -1,7 +1,8 @@
-openai
-langchain
-faiss-cpu
-sentence-transformers
-flask
-langchain_community
-
+openai>=0.27.2
+langchain>=0.0.164
+langchain-community>=0.0.10
+langchain-huggingface>=0.0.10
+faiss-cpu>=1.7.4
+sentence-transformers>=2.4.1
+flask>=2.3.2
+python-dotenv>=1.0.0

@@ -1,5 +1,7 @@
+.env
 rag-ai-env/
 venv/
+WorkingNotes/
 documents/
 vector_store.index
 documents.pkl
