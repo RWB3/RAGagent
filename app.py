@@ -8,22 +8,22 @@ from langchain.agents import initialize_agent as langchain_initialize_agent
 from langchain.agents import AgentType, Tool
 
 app = Flask(__name__)
+qa = initialize_agent()
 
-# Initialize agent and llm
+# Define Tools
+tools = [
+    Tool(
+        name='RunScript',
+        func=run_script,
+        description='Run a specified Python script and return the output.'
+    )
+]
+
+# Initialize LangChain Agent with Tools
 try:
-    qa, llm = initialize_agent()
-    # Define Tools
-    tools = [
-        Tool(
-            name='RunScript',
-            func=run_script,
-            description='Run a specified Python script and return the output.'
-        )
-    ]
-    # Initialize LangChain Agent with Tools
     agent = langchain_initialize_agent(
-        tools=tools,
-        llm=llm,
+        tools,
+        qa.llm,
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
         verbose=True
     )
@@ -44,11 +44,7 @@ def home():
                 response = run_script(os.path.join('scripts', script_path))
             else:
                 response = "Script not found."
-        elif agent:
-            # Use agent to process the query
-            response = agent.run(query)
         else:
-            # Fallback to qa if agent is not initialized
             response = qa(query)['result']
     return render_template('index.html', query=query, response=response)
 
