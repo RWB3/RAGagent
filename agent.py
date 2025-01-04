@@ -8,18 +8,20 @@ import faiss
 from dotenv import load_dotenv
 import warnings
 
-# Suppress specific deprecation warnings (optional and temporary)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-# Load environment variables from .env file
-load_dotenv()
-
 # Updated Imports from langchain_community and langchain_huggingface
 from langchain_community.llms import OpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings  # Ensure correct import path
 
 from langchain.chains import RetrievalQA
+
+
+# Suppress specific deprecation warnings (optional and temporary)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# Load environment variables from .env file
+load_dotenv()
+
 
 # Configuration
 DOCUMENTS_FOLDER = 'documents'      # Folder to store your text documents
