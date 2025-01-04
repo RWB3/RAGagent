@@ -1,4 +1,3 @@
-
 # agent.py
 
 import os
@@ -8,20 +7,18 @@ import faiss
 from dotenv import load_dotenv
 import warnings
 
-# Updated Imports from langchain_community and langchain_huggingface
-from langchain_community.llms import OpenAI
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings  # Ensure correct import path
-
-from langchain.chains import RetrievalQA
-
-
 # Suppress specific deprecation warnings (optional and temporary)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Updated Imports from langchain_community and langchain_huggingface
+from langchain_community.llms import OpenAI
+from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings  # Ensure correct import path
+
+from langchain.chains import RetrievalQA
 
 # Configuration
 DOCUMENTS_FOLDER = 'documents'      # Folder to store your text documents
@@ -61,6 +58,7 @@ def create_vector_store(docs, embeddings, index_path, pickle_path):
 def initialize_agent():
     """
     Initialize the AI agent by setting up the vector store and the retrieval QA chain.
+    Returns both the qa and the llm objects.
     """
     # Check if vector store and documents pickle exist
     if not os.path.exists(VECTOR_STORE_PATH) or not os.path.exists(DOCUMENTS_PICKLE):
@@ -87,8 +85,13 @@ def initialize_agent():
         print("If you trust the source of the vector store, ensure 'allow_dangerous_deserialization' is set to True.")
         raise ve
     
-    # Initialize OpenAI model
-    llm = OpenAI(openai_api_key=OPENAI_API_KEY)
+    # Initialize OpenAI model with specified parameters
+    llm = OpenAI(
+        openai_api_key=OPENAI_API_KEY,
+        model="gpt-4",            # Specify the desired OpenAI model
+        temperature=0.7,          # Adjust for creativity vs. determinism
+        max_tokens=500            # Set desired response length
+    )
     
     # Create Retrieval QA Chain
     qa = RetrievalQA.from_chain_type(
@@ -98,10 +101,10 @@ def initialize_agent():
         return_source_documents=True
     )
     
-    return qa
+    return qa, llm  # Return both qa and llm
 
 if __name__ == '__main__':
-    qa = initialize_agent()
+    qa, _ = initialize_agent()
     while True:
         query = input("You: ")
         if query.lower() in ['exit', 'quit']:
