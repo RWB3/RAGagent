@@ -5,3 +5,4 @@ WorkingNotes/
 documents/
 vector_store.index
 documents.pkl
+/__pycache__
