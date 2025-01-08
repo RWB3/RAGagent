@@ -64,7 +64,13 @@ def initialize_agent():
 
     # Initialize FAISS with embeddings
     embeddings = SentenceTransformerEmbeddings(model_name='all-MiniLM-L6-v2')
-    vector_store = FAISS(embedding_function=embeddings.embed_query, index=index, documents=docs, index_name=VECTOR_STORE_PATH)
+    
+    # **Refactored FAISS Initialization: Removed 'documents' Argument**
+    vector_store = FAISS(
+        embedding_function=embeddings.embed_query,
+        index=index,
+        index_name=VECTOR_STORE_PATH
+    )
 
     # Initialize OpenAI model
     llm = OpenAI(api_key=OPENAI_API_KEY)
