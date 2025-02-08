@@ -8,4 +8,4 @@ vector_store.index
 vector_store.index/
 documents.pkl
 /__pycache__
-choma_db/
+chroma_db/
