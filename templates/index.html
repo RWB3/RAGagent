@@ -1,64 +1,234 @@
-  <!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RAG Agent Chat</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
 
-     <!DOCTYPE html>
-     <html>
-     <head>
-         <title>RAG AI Agent</title>
-         <style>
-             body {
-                 font-family: Arial, sans-serif;
-                 background-color: #f4f4f4;
-                 margin: 0;
-                 padding: 0;
-             }
-             .container {
-                 width: 50%;
-                 margin: auto;
-                 overflow: hidden;
-                 padding: 50px;
-                 background: white;
-                 margin-top: 50px;
-                 box-shadow: 0 0 10px rgba(0,0,0,0.1);
-             }
-             input[type="text"] {
-                 width: 80%;
-                 padding: 10px;
-                 margin-right: 10px;
-                 border: 1px solid #ccc;
-                 border-radius: 4px;
-             }
-             input[type="submit"] {
-                 padding: 10px 20px;
-                 background-color: #28a745;
-                 color: white;
-                 border: none;
-                 border-radius: 4px;
-                 cursor: pointer;
-             }
-             input[type="submit"]:hover {
-                 background-color: #218838;
-             }
-             .response {
-                 margin-top: 20px;
-                 padding: 10px;
-                 background-color: #e9ecef;
-                 border-radius: 4px;
-             }
-         </style>
-     </head>
-     <body>
-         <div class="container">
-             <h1>Ask the AI Agent</h1>
-             <form method="post">
-                 <input type="text" name="query" placeholder="Enter your query here" required>
-                 <input type="submit" value="Submit">
-             </form>
-             {% if response %}
-                 <div class="response">
-                     <h2>Response:</h2>
-                     <p>{{ response }}</p>
-                 </div>
-             {% endif %}
-         </div>
-     </body>
-     </html>
+        #chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        #chat-log {
+            padding: 20px;
+            height: 400px;
+            overflow-y: scroll;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .user-message {
+            background-color: #e2f0ff;
+            text-align: right;
+        }
+
+        .agent-message {
+            background-color: #f9f9f9;
+            text-align: left;
+        }
+
+        #input-form {
+            padding: 20px;
+            display: flex;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        #submit-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #submit-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Add these styles */
+        #button-container {
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between; /* Spread buttons out */
+        }
+
+        .action-button {
+            padding: 10px 20px;
+            background-color: #28a745; /* Green color */
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px; /* Space between buttons */
+        }
+
+        .action-button:hover {
+            background-color: #218838; /* Darker green */
+        }
+
+        /* Style for code analysis output */
+        #code-analysis-output {
+            padding: 20px;
+            background-color: #f2f2f2;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-wrap; /* Preserve formatting and line breaks */
+        }
+
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-log">
+            {% for message in conversation_history %}
+                <div class="message {% if message.role == 'user' %}user-message{% else %}agent-message{% endif %}">
+                    {{ message.content }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div id="button-container">
+            <button class="action-button" id="analyze-code-button">Analyze Code</button>
+            <button class="action-button" id="save-session-button">Save Session</button>
+            <button class="action-button" id="load-session-button">Load Session</button>
+        </div>
+
+        <div id="code-analysis-output" style="display: none;"></div>
+
+        <form id="input-form">
+            <input type="text" id="message-input" placeholder="Type your message here...">
+            <button type="submit" id="submit-button">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const chatLog = document.getElementById('chat-log');
+        const messageInput = document.getElementById('message-input');
+        const inputForm = document.getElementById('input-form');
+        const analyzeCodeButton = document.getElementById('analyze-code-button');
+        const saveSessionButton = document.getElementById('save-session-button');
+        const loadSessionButton = document.getElementById('load-session-button');
+        const codeAnalysisOutput = document.getElementById('code-analysis-output');
+
+
+        // Function to update chat log with new messages
+        function updateChatLog(message, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(isUser ? 'user-message' : 'agent-message');
+            messageDiv.textContent = message;
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight; // Scroll to bottom
+        }
+
+        inputForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            updateChatLog(message, true); // Add user message to chat log
+            messageInput.value = ''; // Clear input
+
+            fetch('/get_response', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'message=' + encodeURIComponent(message)
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateChatLog(data.response, false); // Add agent message to chat log
+                // Update conversation history in the HTML
+                chatLog.innerHTML = ''; // Clear the chat log
+                data.conversation_history.forEach(message => {
+                    updateChatLog(message.content, message.role === 'user');
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                updateChatLog('Error: Could not get response.', false);
+            });
+        });
+
+        analyzeCodeButton.addEventListener('click', function() {
+            fetch('/analyze_code', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                codeAnalysisOutput.textContent = data.analysis;
+                codeAnalysisOutput.style.display = 'block'; // Show the output
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                codeAnalysisOutput.textContent = 'Error: Could not analyze code.';
+                codeAnalysisOutput.style.display = 'block';
+            });
+        });
+
+
+        saveSessionButton.addEventListener('click', function() {
+            fetch('/save_session', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message); // Show success or error message
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: Could not save session.');
+            });
+        });
+
+        loadSessionButton.addEventListener('click', function() {
+            fetch('/load_session', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Clear existing chat log
+                    chatLog.innerHTML = '';
+
+                    // Repopulate chat log with loaded conversation history
+                    data.conversation_history.forEach(message => {
+                        updateChatLog(message.content, message.role === 'user');
+                    });
+                    alert(data.message);
+                } else {
+                    alert(data.message); // Show error message
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: Could not load session.');
+            });
+        });
+    </script>
+</body>
+</html>
