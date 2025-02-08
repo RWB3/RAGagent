@@ -1,6 +1,7 @@
 import os
 import openai
 import chromadb
+from chromadb.errors import InvalidCollectionException
 import logging
 import json
 import importlib
@@ -16,10 +17,9 @@ load_dotenv()
 PERSIST_DIRECTORY = "chroma_db"  # Directory for ChromaDB persistence
 
 class RAGAgent:
-    def __init__(self, openai_api_key, model_name="gpt-4-1106-preview", persist_directory=PERSIST_DIRECTORY):
-        """
-        Initializes the RAGAgent with an OpenAI API key, model name, and persistence directory.
-        """
+    def __init__(self, openai_api_key, model_name="gpt-4o", persist_directory=PERSIST_DIRECTORY):
+    # Initializes the RAGAgent with an OpenAI API key, model name, and persistence directory.
+    
         self.openai_api_key = openai_api_key
         self.model_name = model_name
         self.persist_directory = persist_directory
@@ -30,17 +30,21 @@ class RAGAgent:
         openai.api_key = self.openai_api_key
 
         logging.info("RAGAgent initialized.")
+    
+    # Initialize the collection
+        self.initialize_collection()
 
     def initialize_collection(self, collection_name="my_collection"):
-        """
-        Initializes the ChromaDB collection.
-        """
+    # Initializes the ChromaDB collection.
         try:
             self.collection = self.client.get_collection(name=collection_name)
             logging.info(f"Collection '{collection_name}' loaded.")
-        except ValueError:
+        except InvalidCollectionException:
             self.collection = self.client.create_collection(name=collection_name)
             logging.info(f"Collection '{collection_name}' created.")
+        # Optionally, load documents immediately after creation
+        self.load_documents("knowledge_base")
+        # Update session flag if applicable
 
     def load_documents(self, directory):
         """Loads documents from a directory into the ChromaDB collection."""
@@ -171,7 +175,7 @@ class RAGAgent:
         }
         try:
             with open(filename, "w") as f:
-                json.dump(data, f)
+                json.dump(data, f, indent=4) #Adding indent=4 for readability.
             logging.info(f"Session saved to {filename}")
         except Exception as e:
             logging.error(f"Error saving session: {e}")
@@ -182,10 +186,11 @@ class RAGAgent:
             if os.path.exists(filename):  # Check if the session file exists
                 with open(filename, "r") as f:
                     data = json.load(f)
-                self.conversation_history = data["conversation_history"]
+                #Load all of the old data from the session
+                old_conversation_history = data.get("conversation_history", []) #Load the old conversation history
+                self.conversation_history = old_conversation_history
                 self.persist_directory = data["persist_directory"]
                 self.model_name = data["model_name"]
-                #collection_exists = data.get("collection_exists", False)
 
                 #Re-initialize chromadb, openai, and model in case they are different from initial values
                 self.client = chromadb.PersistentClient(path=self.persist_directory)
@@ -195,7 +200,6 @@ class RAGAgent:
 
             else:
                 logging.warning("Session file not found. Starting a new session.")
-
 
         except FileNotFoundError:
             logging.warning("Session file not found. Starting a new session.")
@@ -230,36 +234,3 @@ class RAGAgent:
         self.conversation_history.append({"role": "assistant", "content": response})
 
         return response
-
-# Example Usage (for testing in the same script - remove for separate execution)
-if __name__ == "__main__":
-    # Get the OpenAI API key from the environment variables
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-
-    # Ensure the API key is set
-    if not openai_api_key:
-        raise ValueError("OPENAI_API_KEY not found in the environment variables. Please set it.")
-
-    # Initialize the agent
-    agent = RAGAgent(openai_api_key)
-
-    # Load a previous session or create a new one
-    agent.load_session()  # Loads from "agent_session.json" by default
-
-    # Initialize the ChromaDB collection
-    agent.initialize_collection()
-
-    # Load documents from a directory
-    agent.load_documents("knowledge_base")  # Replace "knowledge_base" with your directory name
-
-    # Example query
-    query = "What are the benefits of using Chromadb?"
-    response = agent.run(query)
-    print(f"Agent's Response: {response}")
-
-    # Example of analyzing the agent's code
-    analysis = agent.analyze_code("rag_agent.py")  # Replace with the actual filename
-    print(f"Code Analysis:\n{analysis}")
-
-    # Save the session
-    agent.save_session()

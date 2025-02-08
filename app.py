@@ -40,32 +40,36 @@ agent = initialize_agent()
 @app.route("/")
 def index():
     """Renders the main chat interface."""
+    global agent
     if agent is None:
         return "<h1>Error: RAGAgent failed to initialize. Check the logs.</h1>"
-    return render_template("index.html", conversation_history= [])
+    #Added code to check for None
+    if agent is not None:
+        conversation_history = agent.conversation_history
+    else:
+        conversation_history = []
+
+    return render_template("index.html", conversation_history=conversation_history)
 
 
 @app.route("/get_response", methods=["POST"])
 def get_response():
     """Handles user input and returns the agent's response."""
     global agent
-    if agent is None:
-        agent = initialize_agent() #Try initializing again, just in case.
-        if agent is None:
-            return jsonify({"response": "Error: RAGAgent failed to initialize."})
 
-    #Check that the knowledge base directory exists.
+    # Check that the knowledge base directory exists.
     if not os.path.exists("knowledge_base"):
         logging.error("Knowledge base directory 'knowledge_base' not found.")
         return jsonify({"response": "Error: Knowledge base directory 'knowledge_base' not found."})
 
-
-    # Load documents if the collection is empty
+    # Ensure the collection is initialized
     if agent.collection is None:
-        agent.initialize_collection() #Creates the collection
+        logging.error("Collection is not initialized.")
+        return jsonify({"response": "Error: Collection is not initialized."})
+
+    # Load documents if the collection is empty or not loaded
+    if not agent.collection.count():
         agent.load_documents("knowledge_base")  # Load documents at startup
-
-
 
     user_message = request.form["message"]
     response = agent.run(user_message)
@@ -83,7 +87,7 @@ def analyze_code():
 
 @app.route("/save_session", methods=["POST"])
 def save_current_session():
-    """Saves the current session."""
+    # Saves the current session.
     if agent is None:
         return jsonify({"status": "error", "message": "RAGAgent failed to initialize."})
     try:
