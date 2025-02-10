@@ -1,3 +1,29 @@
+"""
+rag_agent.py
+
+Description:
+Developed by Ron Bookman, this module defines the RAGAgent class, which encapsulates the functionality 
+of a Retrieval-Augmented Generation (RAG) AI Agent. The agent leverages OpenAI's language models and 
+ChromaDB for document retrieval to provide informed and contextually relevant responses to user queries.
+
+Key Responsibilities:
+- Initializes OpenAI API and ChromaDB client.
+- Validates the specified AI model.
+- Manages a collection of documents for information retrieval.
+- Loads documents from a specified knowledge base directory.
+- Retrieves relevant documents based on user queries.
+- Generates answers using the AI model with or without additional context.
+- Analyzes Python code for improvements, adherence to best practices, and potential issues.
+- Manages conversation history for session persistence.
+- Provides utility methods for running custom tools and handling sessions.
+
+Dependencies:
+- OpenAI Python library for interacting with OpenAI's API.
+- ChromaDB for document storage and retrieval.
+- dotenv for environment variable management.
+- Python's standard libraries for logging, JSON handling, and error management.
+"""
+
 import os
 import openai
 import chromadb

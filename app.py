@@ -1,3 +1,23 @@
+"""
+app.py
+
+Description:
+This Flask application by Ron Bookman serves as the backend for a Retrieval-Augmented Generation (RAG) AI Agent. 
+It handles initializing the RAGAgent, managing API routes for user interactions, analyzing code, 
+and managing user sessions. The application enables a web-based chat interface where users can 
+interact with the AI agent, analyze code snippets, and save/load conversation sessions.
+
+Key Features:
+- Initializes and manages the RAGAgent instance.
+- Provides API endpoints for:
+    - Rendering the chat interface.
+    - Processing user messages and generating AI responses.
+    - Analyzing the agent's code for improvements.
+    - Saving and loading conversation sessions.
+- Implements CORS to allow cross-origin requests.
+- Configures logging for monitoring and debugging purposes.
+"""
+
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import os
