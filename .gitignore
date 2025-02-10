@@ -7,3 +7,4 @@ documents/
 knowledge_base/
 __pycache__/
 chroma_db/
+agent_session.json
