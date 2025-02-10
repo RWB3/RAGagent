@@ -41,11 +41,14 @@ agent = initialize_agent()
 
 @app.route("/")
 def index():
-    """Renders the main chat interface."""
     global agent
     if agent is None:
         return "<h1>Error: RAGAgent failed to initialize. Check the logs.</h1>"
+    
+    # Automatically load session to retrieve conversation history
+    agent.load_session()
     conversation_history = agent.conversation_history
+    
     return render_template("index.html", conversation_history=conversation_history)
 
 
