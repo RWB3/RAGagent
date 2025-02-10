@@ -1,11 +1,9 @@
 .env
-rag-ai-env/
 venv/
+.venv/
+.vscode/
 WorkingNotes/
 documents/
 knowledge_base/
-vector_store.index
-vector_store.index/
-documents.pkl
-/__pycache__
+__pycache__/
 chroma_db/

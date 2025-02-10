@@ -44,6 +44,7 @@
         #input-form {
             padding: 20px;
             display: flex;
+            border-top: 1px solid #ccc;
         }
 
         #message-input {
@@ -52,6 +53,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             margin-right: 10px;
+            font-size: 16px;
         }
 
         #submit-button {
@@ -61,6 +63,7 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
         }
 
         #submit-button:hover {
@@ -72,6 +75,7 @@
             padding: 10px 20px;
             display: flex;
             justify-content: space-between; /* Spread buttons out */
+            border-top: 1px solid #ccc;
         }
 
         .action-button {
@@ -82,6 +86,7 @@
             border-radius: 5px;
             cursor: pointer;
             margin-right: 10px; /* Space between buttons */
+            font-size: 14px;
         }
 
         .action-button:hover {
@@ -96,6 +101,7 @@
             border-radius: 5px;
             margin-top: 20px;
             white-space: pre-wrap; /* Preserve formatting and line breaks */
+            display: none;
         }
 
     </style>
@@ -116,7 +122,7 @@
             <button class="action-button" id="load-session-button">Load Session</button>
         </div>
 
-        <div id="code-analysis-output" style="display: none;"></div>
+        <div id="code-analysis-output"></div>
 
         <form id="input-form">
             <input type="text" id="message-input" placeholder="Type your message here...">
@@ -162,11 +168,7 @@
             .then(response => response.json())
             .then(data => {
                 updateChatLog(data.response, false); // Add agent message to chat log
-                // Update conversation history in the HTML
-                chatLog.innerHTML = ''; // Clear the chat log
-                data.conversation_history.forEach(message => {
-                    updateChatLog(message.content, message.role === 'user');
-                });
+                // Optionally, you can update the conversation history if needed
             })
             .catch(error => {
                 console.error('Error:', error);
