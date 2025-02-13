@@ -6,6 +6,10 @@ import logging
 from rag_agent import RAGAgent
 from dotenv import load_dotenv
 
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
 # Load environment variables
 load_dotenv()
 
