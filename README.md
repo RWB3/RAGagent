@@ -1,8 +1,8 @@
-# RoBo-RAG-Agent
+# RAGAgent
 
 ## Overview
 
-RoBo-RAG-Agent is a web-based Retrieval-Augmented Generation (RAG) AI agent built using Flask. It integrates ChromaDB for document retrieval and supports both synchronous and asynchronous model interactions. The agent can chat, analyze code for improvements, and manage conversation sessions seamlessly.
+RAGAgent is a web-based Retrieval-Augmented Generation (RAG) AI agent built using Flask. It integrates ChromaDB for document retrieval and supports both synchronous and asynchronous model interactions. The agent can chat, analyze code for improvements, and manage conversation sessions.
 
 ## Features
 
@@ -32,8 +32,8 @@ RoBo-RAG-Agent is a web-based Retrieval-Augmented Generation (RAG) AI agent buil
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/rag-ai-agent.git
-   cd rag-ai-agent
+   git clone https://github.com/RWB3/RAGagent.git
+   cd RAGagent
    ```
 
 2. **Create a Virtual Environment**
