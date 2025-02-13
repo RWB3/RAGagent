@@ -20,7 +20,7 @@ class ModelClient:
         if context_documents:
             context_str = "\n".join(context_documents)
             prompt = (
-                "You are a helpful and informative AI agent.\n\n Process the following based primarily on your own knowledge: {query}\n\n"
+                f"You are a helpful and informative AI agent.\n\n Process the following based primarily on your own knowledge: {query}\n\n"
                 f"Here is some additional information. Use it only if relevant. "
                 f"If it is not relevant, ignore it:\n{context_str}\n\nAnswer:"
             )
