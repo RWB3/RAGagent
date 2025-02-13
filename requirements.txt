@@ -5,3 +5,5 @@ tqdm
 pypdf
 flask
 flask-cors
+requests
+httpx

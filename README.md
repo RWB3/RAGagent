@@ -2,30 +2,30 @@
 
 ## Overview
 
-This **RAG Capable AI Agent** is a web-based application that leverages Retrieval-Augmented Generation (RAG) techniques to provide informed and contextually relevant responses to user queries. Powered by OpenAI's advanced language models and ChromaDB for document retrieval, this AI agent can interact with users, analyze code snippets, and manage conversation sessions seamlessly. (Okay, seamlessly is a little bit aspirational at this time!)
+RoBo-RAG-Agent is a web-based Retrieval-Augmented Generation (RAG) AI agent built using Flask. It integrates ChromaDB for document retrieval and supports both synchronous and asynchronous model interactions. The agent can chat, analyze code for improvements, and manage conversation sessions seamlessly.
 
 ## Features
 
-- **Interactive Chat Interface**: Engage in real-time conversations with the AI agent through a user-friendly web interface.
-- **Knowledge Retrieval**: Retrieves relevant documents from a predefined knowledge base to enhance response accuracy.
-- **Code Analysis**: Analyze Python code for improvements, potential bugs, efficiency enhancements, and adherence to best practices.
-- **Session Management**: Save and load conversation sessions to maintain context across interactions.
-- **Scalable Architecture**: Built with Flask, allowing easy scaling and integration with more complex applications.
-- **Cross-Origin Resource Sharing (CORS)**: Enabled to facilitate interactions from different origins.
+- **Interactive Chat Interface**: Real-time conversations via a user-friendly web interface.
+- **Knowledge Retrieval**: Uses ChromaDB to fetch relevant documents from a `knowledge_base`.
+- **Code Analysis**: Analyze Python code to suggest improvements in clarity, efficiency, and security.
+- **Session Management**: Automatically saves and loads conversation sessions in `agent_session.json`.
+- **Asynchronous Processing**: Supports asynchronous model completions.
+- **Robust Logging**: Detailed logging for debugging and monitoring.
 
 ## Technologies Used
 
-- **Backend**: Python, Flask, OpenAI API, ChromaDB (Ollama models comming soon!)
+- **Backend**: Python, Flask, dotenv, logging
+- **Document Retrieval**: ChromaDB
+- **Model Interaction**: Requests and HTTPX for API calls (Ollama backend)
 - **Frontend**: HTML, CSS, JavaScript
-- **Database**: ChromaDB for document storage and retrieval
-- **Utilities**: dotenv for environment variable management, logging for monitoring
 
 ## Prerequisites
 
-- **Python**: Version 3.8 or higher
-- **OpenAI API Key**: Sign up at [OpenAI](https://platform.openai.com/) to obtain an API key.
-- **ChromaDB**: Ensure ChromaDB is set up and accessible.
-- **Knowledge Base**: Prepare a `knowledge_base` directory with `.txt`, and (comming soon!`.pdf`) documents to serve as the knowledge repository.
+- **Python**: 3.8 or higher
+- **ChromaDB**: Ensure it is set up and accessible.
+- **Knowledge Base**: Create a `knowledge_base` directory with `.txt` and `.pdf` documents.
+- **Environment Variables**: Configure using a `.env` file as detailed below.
 
 ## Installation
 
@@ -40,7 +40,10 @@ This **RAG Capable AI Agent** is a web-based application that leverages Retrieva
 
    ```bash
    python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # On Linux/macOS:
+   source venv/bin/activate
+   # On Windows:
+   venv\Scripts\activate
    ```
 
 3. **Install Dependencies**
@@ -51,17 +54,16 @@ This **RAG Capable AI Agent** is a web-based application that leverages Retrieva
 
 4. **Configure Environment Variables**
 
-   Create a `.env` file in the project root with the following content:
-
+   Create a `.env` file in the project root with at least the following:
    ```env
-   OPENAI_API_KEY=your_openai_api_key
-   OPENAI_MODEL=o1-mini 
+   CHROMADB_PERSIST_DIRECTORY=chroma_db
+   CHROMADB_COLLECTION=my_collection
+   KNOWLEDGE_BASE_DIRECTORY=knowledge_base
+   MODEL_BACKEND=ollama
+   OLLAMA_HOST=http://localhost:11434
+   OLLAMA_TIMEOUT=120
+   USE_MODEL=llama3.2
    ```
-   gpt-4o and o1-mini have been tested so far. 
-
-5. **Prepare the Knowledge Base**
-
-   Ensure there is a `knowledge_base` directory in the project root containing (currently only .txt) documents that the AI agent can reference.
 
 ## Usage
 
@@ -71,80 +73,50 @@ This **RAG Capable AI Agent** is a web-based application that leverages Retrieva
    python app.py
    ```
 
-   The application will start on `http://127.0.0.1:5000/` by default.
+   The app will run at [http://127.0.0.1:5000/](http://127.0.0.1:5000/).
 
 2. **Interact with the AI Agent**
 
-   - Open your web browser and navigate to `http://127.0.0.1:5000/`.
-   - Use the chat interface to send messages to the AI agent.
-   - Utilize action buttons to analyze code, save sessions, or load previous conversations.
+   - Use the web interface to chat with the agent.
+   - Analyze code by sending a request to the `/analyze_code` endpoint.
+   - Manage sessions using `/save_session` and `/load_session`.
 
 ## API Endpoints
 
 - **`/`**: Renders the main chat interface.
-- **`/get_response`**: Handles user messages and returns AI responses.
-- **`/analyze_code`**: Analyzes the agent's codebase and provides feedback.
+- **`/get_response`**: Receives user messages and returns AI responses.
+- **`/analyze_code`**: Analyzes the agent’s code for improvements.
 - **`/save_session`**: Saves the current conversation session.
 - **`/load_session`**: Loads a previously saved conversation session.
 
 ## File Structure
 
-- **`app.py`**: Main Flask application that manages routes and integrates the RAGAgent.
-- **`rag_agent.py`**: Defines the `RAGAgent` class responsible for handling AI interactions and document retrieval.
-- **`templates/index.html`**: Frontend template for the chat interface.
-- **`knowledge_base/`**: Directory containing documents for the AI agent's knowledge base.
-- **`chroma_db/`**: Directory where ChromaDB stores its data.
-- **`.env`**: Environment variables configuration file.
-- **`requirements.txt`**: Python dependencies.
+- **`app.py`**: Main Flask application managing routes and integrating the RAGAgent.
+- **`rag_agent.py`**: Contains the RAGAgent class for AI interactions and session management.
+- **`model_client.py`**: Handles synchronous and asynchronous model API calls.
+- **`chromadb_client.py`**: Manages ChromaDB collection creation, document loading, and retrieval.
+- **`templates/`**: Contains HTML templates (e.g., `index.html`) for the frontend.
+- **`knowledge_base/`**: Directory housing text and PDF documents used for context.
+- **`chroma_db/`**: Directory where ChromaDB persists its data.
+- **`.env`**: Environment variable configuration file.
+- **`requirements.txt`**: Python dependency list.
 
-## Logging
+## Logging & Error Handling
 
-The application is configured to log important events and errors. Logs include timestamps, log levels, and messages, facilitating easier debugging and monitoring.
-
-- **Log Level**: INFO by default. Can be adjusted in `app.py` and `rag_agent.py`.
-- **Format**: `%(asctime)s - %(levelname)s - %(message)s`
-
-## Error Handling
-
-The application includes comprehensive error handling to manage issues such as:
-
-- Missing or invalid API keys.
-- Failures in initializing the RAGAgent.
-- Issues with document loading and retrieval.
-- Problems during code analysis.
-- Session management errors.
-
-Errors are logged with detailed messages to assist in troubleshooting.
+- Logs are configured to capture key events, errors, and detailed messages.
+- The application handles errors related to missing API keys, document load failures, and session management issues.
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. **Fork the Repository**
-2. **Create a Feature Branch**
-
-   ```bash
-   git checkout -b feature/YourFeature
-   ```
-
-3. **Commit Your Changes**
-
-   ```bash
-   git commit -m "Add awesome feature"
-   ```
-
-4. **Push to the Branch**
-
-   ```bash
-   git push origin feature/YourFeature
-   ```
-
-5. **Open a Pull Request**
+Contributions are welcome! Follow these steps:
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/YourFeature`).
+3. Commit your changes (`git commit -m "Add new feature"`).
+4. Push to the branch (`git push origin feature/YourFeature`).
+5. Open a pull request.
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
 
----
-
-*Happy Chatting with RoBoRAG Agent!*
+*Happy Chatting with RoBo-RAG-Agent!*
