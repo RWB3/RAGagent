@@ -6,6 +6,7 @@ def run(expression):
     try:
         result = eval(expression)  # WARNING: Be extremely careful with eval()!
         return str(result)
+        logging.info(f"Calculator.py returns: {result}")
     except Exception as e:
         logging.error(f"Error evaluating expression: {e}")
         return "Error: Invalid expression."

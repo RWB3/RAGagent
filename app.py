@@ -6,7 +6,6 @@ import logging
 from rag_agent import RAGAgent
 from dotenv import load_dotenv
 
-
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
@@ -81,6 +80,16 @@ def load_saved_session():
     if agent is None:
         return jsonify({"status": "error", "message": "Error loading session. RAGAgent failed to initialize."})
     return jsonify({"status": "success", "message": "Session loaded successfully.", "conversation_history": agent.conversation_history})
+
+@app.route("/run_tool", methods=["POST"])
+def run_tool():
+    tool_name = request.form.get("tool_name", "").strip()
+    tool_input = request.form.get("tool_input", "").strip()
+    if not tool_name:
+        return jsonify({"error": "Tool name is required."}), 400
+    result = agent.run_tool(tool_name, tool_input)
+    return jsonify({"result": result})
+
 
 if __name__ == "__main__":
     app.run(debug=True)

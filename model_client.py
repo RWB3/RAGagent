@@ -20,16 +20,29 @@ class ModelClient:
         if context_documents:
             context_str = "\n".join(context_documents)
             prompt = (
-                f"You are a helpful and informative AI agent.\n\n Process the following based primarily on your own knowledge: {query}\n\n"
-                f"Here is some additional information. Use it only if relevant. "
-                f"If it is not relevant, ignore it:\n{context_str}\n\nAnswer:"
+                "You are a helpful and informative AI agent.\n\n"
+                "Question: " + query + "\n\n"
+                "If you determine that using one of the available tools would improve your answer, "
+                "output a command on a new line in the following JSON format:\n\n"
+                "TOOL_CALL: {\"tool\": \"<tool_name>\", \"input\": \"<tool_input>\", \"final_answer\": \"<final answer if no tool needed>\"}\n\n"
+                "Below is additional context (use it only if relevant):\n" + context_str + "\n\n"
+                "Answer:"
             )
         else:
+            #prompt = (
+            #    "You are a helpful and informative AI agent.\n\n"
+            #    "Question: " + query + "\n\nAnswer:"
+            #)
             prompt = (
-                "You are a helpful and informative AI agent. \n\nProcess the following based on your knowledge.\n\n"
-                f"Question: {query}\n\nAnswer:"
+                "You are a helpful and informative AI agent.\n\n"
+                "Question: " + query + "\n\n"
+                "If you determine that using one of the available tools would improve your answer, "
+                "output a command on a new line in the following JSON format:\n\n"
+                "TOOL_CALL: {\"tool\": \"<tool_name>\", \"input\": \"<tool_input>\", \"final_answer\": \"<final answer if no tool needed>\"}\n\n"
+                "Answer:"
             )
-        # Log the complete prompt sent to the model
+
+
         logger.info(f"Generated prompt: {prompt}")
         return prompt
 

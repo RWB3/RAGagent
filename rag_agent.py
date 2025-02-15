@@ -2,9 +2,11 @@
 import os
 import json
 import logging
+import traceback
 from dotenv import load_dotenv
 from model_client import ModelClient
 from chromadb_client import ChromaDBClient
+import importlib
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -38,9 +40,35 @@ class RAGAgent:
 
     def generate_answer(self, query):
         context = self.retrieve_relevant_documents(query)
-        answer = self.model_client.generate_completion_sync(query, context)
+        raw_output = self.model_client.generate_completion_sync(query, context)
+        logging.info(f"Raw LLM output: {raw_output}")
+
+        # Look for the TOOL_CALL marker anywhere in the output.
+        # If found, extract the tool command and run the tool.
+        # This is required because thinking/resoning LLMs will output their
+        # thought process before the final answer or tool command.
+        marker = "TOOL_CALL:"
+        marker_index = raw_output.find(marker)
+        if marker_index != -1:
+            # Extract everything after the marker.
+            command_str = raw_output[marker_index + len(marker):].strip()
+            try:
+                command = json.loads(command_str)
+                tool_name = command.get("tool")
+                tool_input = command.get("input", "")
+                final_answer = command.get("final_answer", "")
+                tool_result = self.run_tool(tool_name, tool_input)
+                answer = f"{final_answer}\nTool result: {tool_result}"
+                logging.info(f"Tool command processed: {command}")
+            except Exception as e:
+                logging.error(f"Error processing tool command: {e}")
+                answer = raw_output  # fallback to raw output if parsing fails
+        else:
+            answer = raw_output
+
         self.conversation_history.append({"query": query, "answer": answer})
         return answer
+
 
     async def generate_answer_async(self, query):
         context = self.retrieve_relevant_documents(query)
@@ -68,6 +96,31 @@ class RAGAgent:
             "```python\n" + code + "\n```"
         )
         return self.model_client.generate_custom_prompt_sync(prompt)
+
+    def run_tool(self, tool_name, tool_input):
+        """
+        Dynamically imports and runs a tool from the 'tools' directory.
+        The tool module should have a 'run' function that accepts tool_input.
+        """
+        try:
+            # Ensure the tools folder is in the Python path if not already
+            import sys
+            tools_path = os.path.join(os.path.dirname(__file__), "tools")
+            if tools_path not in sys.path:
+                sys.path.append(tools_path)
+            module = importlib.import_module(f"tools.{tool_name}")
+            result = module.run(tool_input)
+            logger.info(f"Tool '{tool_name}' executed with input '{tool_input}'. Result: {result}")
+            return result
+        except ImportError:
+            error_msg = f"Tool '{tool_name}' not found."
+            logger.error(error_msg)
+            return error_msg
+        except Exception as e:
+            error_msg = f"Error running tool '{tool_name}': {e}"
+            logger.error(error_msg)
+            logger.error(traceback.format_exc())
+            return error_msg
 
     def save_session(self, filename=SESSION_FILENAME):
         data = {"conversation_history": self.conversation_history}
