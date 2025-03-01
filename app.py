@@ -1,8 +1,16 @@
 # app.py
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
+
+# To run the FastAPI server, execute the following command in the terminal:
+#     uvicorn app:app --reload
+
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from typing import Optional
 import os
 import logging
+import traceback
 from rag_agent import RAGAgent
 from dotenv import load_dotenv
 
@@ -12,84 +20,101 @@ logging.basicConfig(level=logging.INFO)
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI()
+
+# Check if the 'static' directory exists
+STATIC_DIR = "static"
+if not os.path.exists(STATIC_DIR):
+    logging.warning(f"Static directory '{STATIC_DIR}' not found. Creating it...")
+    os.makedirs(STATIC_DIR, exist_ok=True)  # Create the directory if it doesn't exist
+
+# Mount the 'static' directory to serve static files (CSS, JS)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Configure Jinja2 templates
+templates = Jinja2Templates(directory="templates")
 
 # Initialize the RAGAgent
-agent = RAGAgent()
+try:
+    agent = RAGAgent()
+except Exception as e:
+    logging.error(f"Error initializing RAGAgent: {e}")
+    traceback.print_exc()
+    agent = None
 
-@app.route("/")
-def index():
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
     global agent
     if agent is None:
-        return "<h1>Error: RAGAgent failed to initialize. Check logs.</h1>"
+        return HTMLResponse(content="<h1>Error: RAGAgent failed to initialize. Check logs.</h1>")
     # Automatically load session
     agent.load_session()
     conversation_history = agent.conversation_history
-    return render_template("index.html", conversation_history=conversation_history)
+    return templates.TemplateResponse("index.html", {"request": request, "conversation_history": conversation_history})
 
-@app.route("/get_response", methods=["POST"])
-def get_response():
+@app.post("/get_response")
+async def get_response(request: Request, message: str = Form(...)):
     global agent
     # Ensure the knowledge base exists
     if not os.path.exists("knowledge_base"):
         logging.error("Knowledge base directory 'knowledge_base' not found.")
-        return jsonify({"response": "Error: Knowledge base directory 'knowledge_base' not found."})
+        return JSONResponse(content={"response": "Error: Knowledge base directory 'knowledge_base' not found."})
     # Updated: Check the collection via the ChromaDB client
     if agent.chromadb_client.collection is None:
         logging.error("Collection is not initialized.")
-        return jsonify({"response": "Error: Collection is not initialized."})
+        return JSONResponse(content={"response": "Error: Collection is not initialized."})
     
     # Load new documents (duplicates are handled inside load_documents)
     agent.chromadb_client.load_documents("knowledge_base")
     
-    user_message = request.form.get("message", "").strip()
+    user_message = message.strip()
     if not user_message:
-        return jsonify({"response": "Please provide a message.", "conversation_history": agent.conversation_history})
+        return JSONResponse(content={"response": "Please provide a message.", "conversation_history": agent.conversation_history})
     
     logging.info(f"User Query: {user_message}")
-    response_text = agent.generate_answer(user_message)
+    response_text = await agent.generate_answer_async(user_message)
     agent.save_session()  # Save session after processing
-    return jsonify({"response": response_text, "conversation_history": agent.conversation_history})
+    return JSONResponse(content={"response": response_text, "conversation_history": agent.conversation_history})
 
-@app.route("/analyze_code", methods=["POST"])
-def analyze_code():
+@app.post("/analyze_code")
+async def analyze_code():
+    global agent
     if agent is None:
-        return jsonify({"analysis": "Error: RAGAgent failed to initialize."})
+        return JSONResponse(content={"analysis": "Error: RAGAgent failed to initialize."})
     analysis = agent.analyze_code("rag_agent.py")
-    return jsonify({"analysis": analysis})
+    return JSONResponse(content={"analysis": analysis})
 
-@app.route("/save_session", methods=["POST"])
-def save_current_session():
+@app.post("/save_session")
+async def save_current_session():
+    global agent
     if agent is None:
-        return jsonify({"status": "error", "message": "RAGAgent failed to initialize."})
+        return JSONResponse(content={"status": "error", "message": "RAGAgent failed to initialize."})
     try:
         agent.save_session()
-        return jsonify({"status": "success", "message": "Session saved successfully."})
+        return JSONResponse(content={"status": "success", "message": "Session saved successfully."})
     except Exception as e:
         logging.error(f"Error saving session: {e}")
-        return jsonify({"status": "error", "message": f"Error saving session: {e}"})
+        return JSONResponse(content={"status": "error", "message": f"Error saving session: {e}"})
 
-@app.route("/load_session", methods=["POST"])
-def load_saved_session():
+@app.post("/load_session")
+async def load_saved_session():
     global agent
     # Delete the existing agent and reinitialize it
     if agent is not None:
         del agent
-    agent = RAGAgent()
+    try:
+        agent = RAGAgent()
+    except Exception as e:
+        logging.error(f"Error re-initializing agent: {e}")
+        return JSONResponse(content={"status": "error", "message": "Error loading session. RAGAgent failed to initialize."})
     if agent is None:
-        return jsonify({"status": "error", "message": "Error loading session. RAGAgent failed to initialize."})
-    return jsonify({"status": "success", "message": "Session loaded successfully.", "conversation_history": agent.conversation_history})
+        return JSONResponse(content={"status": "error", "message": "Error loading session. RAGAgent failed to initialize."})
+    return JSONResponse(content={"status": "success", "message": "Session loaded successfully.", "conversation_history": agent.conversation_history})
 
-@app.route("/run_tool", methods=["POST"])
-def run_tool():
-    tool_name = request.form.get("tool_name", "").strip()
-    tool_input = request.form.get("tool_input", "").strip()
+@app.post("/run_tool")
+async def run_tool_endpoint(tool_name: str = Form(...), tool_input: str = Form(...)):
+    global agent
     if not tool_name:
-        return jsonify({"error": "Tool name is required."}), 400
+        return JSONResponse(content={"error": "Tool name is required."}), 400
     result = agent.run_tool(tool_name, tool_input)
-    return jsonify({"result": result})
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    return JSONResponse(content={"result": result})
