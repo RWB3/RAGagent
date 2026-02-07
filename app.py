@@ -73,6 +73,8 @@ async def get_response(request: Request, message: str = Form(...)):
     
     logging.info(f"User Query: {user_message}")
     response_text = await agent.generate_answer_async(user_message)
+    agent.conversation_history.append({"role": "user", "content": user_message})
+    agent.conversation_history.append({"role": "agent", "content": response_text})
     agent.save_session()  # Save session after processing
     return JSONResponse(content={"response": response_text, "conversation_history": agent.conversation_history})
 
@@ -109,7 +111,16 @@ async def load_saved_session():
         return JSONResponse(content={"status": "error", "message": "Error loading session. RAGAgent failed to initialize."})
     if agent is None:
         return JSONResponse(content={"status": "error", "message": "Error loading session. RAGAgent failed to initialize."})
-    return JSONResponse(content={"status": "success", "message": "Session loaded successfully.", "conversation_history": agent.conversation_history})
+    
+    # Ensure conversation history is a list of dictionaries with 'role' and 'content'
+    formatted_history = []
+    for msg in agent.conversation_history:
+        if isinstance(msg, dict) and "role" in msg and "content" in msg:
+            formatted_history.append({"role": msg["role"], "content": msg["content"]})
+        else:
+            logging.warning(f"Skipping invalid message format: {msg}")
+    
+    return JSONResponse(content={"status": "success", "message": "Session loaded successfully.", "conversation_history": formatted_history})
 
 @app.post("/run_tool")
 async def run_tool_endpoint(tool_name: str = Form(...), tool_input: str = Form(...)):

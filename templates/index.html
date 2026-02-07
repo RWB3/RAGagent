@@ -143,10 +143,10 @@
 
 
         // Function to update chat log with new messages
-        function updateChatLog(message, isUser) {
+        function updateChatLog(message, role) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message');
-            messageDiv.classList.add(isUser ? 'user-message' : 'agent-message');
+            messageDiv.classList.add(role === 'user' ? 'user-message' : 'agent-message');
             messageDiv.textContent = message;
             chatLog.appendChild(messageDiv);
             chatLog.scrollTop = chatLog.scrollHeight; // Scroll to bottom
@@ -157,7 +157,7 @@
             const message = messageInput.value.trim();
             if (!message) return;
 
-            updateChatLog(message, true); // Add user message to chat log
+            updateChatLog(message, 'user'); // Add user message to chat log
             messageInput.value = ''; // Clear input
 
             fetch('/get_response', {
@@ -169,12 +169,12 @@
             })
             .then(response => response.json())
             .then(data => {
-                updateChatLog(data.response, false); // Add agent message to chat log
+                updateChatLog(data.response, 'agent'); // Add agent message to chat log
                 // Optionally, you can update the conversation history if needed
             })
             .catch(error => {
                 console.error('Error:', error);
-                updateChatLog('Error: Could not get response.', false);
+                updateChatLog('Error: Could not get response.', 'agent');
             });
         });
 
@@ -221,7 +221,11 @@
 
                     // Repopulate chat log with loaded conversation history
                     data.conversation_history.forEach(message => {
-                        updateChatLog(message.content, message.role === 'user');
+                        if (message && message.role && message.content) {
+                            updateChatLog(message.content, message.role);
+                        } else {
+                            console.warn("Skipping invalid message:", message);
+                        }
                     });
                     alert(data.message);
                 } else {
